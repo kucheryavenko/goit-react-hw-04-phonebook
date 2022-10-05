@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import { ContactForm } from 'components/ContactForm';
 import { ContactList } from 'components/ContactList';
@@ -11,54 +11,37 @@ import { storage } from 'service/storage';
 
 const LS_KEY = 'contacts';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState(() => {
+    return storage.load(LS_KEY) ?? [];
+  });
+  const [filter, setFilter] = useState('');
 
-  componentDidMount() {
-    const parsedContacts = storage.load(LS_KEY);
+  useEffect(() => {
+    storage.save(LS_KEY, contacts);
+  }, [contacts]);
 
-    if (parsedContacts) {
-      this.setState({ contacts: parsedContacts });
-    }
-  }
-
-  componentDidUpdate(_, prevState) {
-    if (this.state.contacts !== prevState.contacts) {
-      storage.save(LS_KEY, this.state.contacts);
-    }
-  }
-
-  addContact = contact => {
-    if (this.checkDublicate(contact)) {
+  const addContact = contact => {
+    if (checkDublicate(contact)) {
       return alert(`${contact.name} is already in contacts.`);
     }
-    this.setState(prevState => {
+    setContacts(prevContacts => {
       const newContacts = {
         id: nanoid(),
         ...contact,
       };
-      return {
-        contacts: [newContacts, ...prevState.contacts],
-      };
+      return [newContacts, ...prevContacts];
     });
   };
 
-  deleteContact = id => {
-    this.setState(prevState => {
-      const newContacts = prevState.contacts.filter(
-        contact => contact.id !== id
-      );
-      return {
-        contacts: newContacts,
-      };
+  const deleteContact = id => {
+    setContacts(prevContacts => {
+      const newContacts = prevContacts.filter(contact => contact.id !== id);
+      return newContacts;
     });
   };
 
-  getVisibleContacts() {
-    const { contacts, filter } = this.state;
+  const getVisibleContacts = () => {
     if (!filter) {
       return contacts;
     }
@@ -71,44 +54,37 @@ export class App extends Component {
       return result;
     });
     return visibleContacts;
-  }
-
-  changeFilter = evt => {
-    const { name, value } = evt.target;
-    this.setState({
-      [name]: value,
-    });
   };
 
-  checkDublicate({ name, number }) {
-    const { contacts } = this.state;
+  const changeFilter = evt => {
+    const { value } = evt.target;
+    setFilter(value);
+  };
+
+  const checkDublicate = ({ name, number }) => {
     const result = contacts.find(
       contact => contact.name === name && contact.number === number
     );
     return result;
-  }
+  };
 
-  render() {
-    const { addContact, deleteContact, changeFilter } = this;
-    const visibleContacts = this.getVisibleContacts();
-    const { filter } = this.state;
+  const visibleContacts = getVisibleContacts();
 
-    return (
-      <Container>
-        <Title title={'Phonebook'} />
-        <ContactForm addContact={addContact} />
-        <Section title={'Contacts'}>
-          <Filter value={filter} changeFilter={changeFilter} />
-          {visibleContacts.length !== 0 ? (
-            <ContactList
-              visibleContacts={visibleContacts}
-              deleteContact={deleteContact}
-            />
-          ) : (
-            <Notification message="You don't have contacts yet..." />
-          )}
-        </Section>
-      </Container>
-    );
-  }
-}
+  return (
+    <Container>
+      <Title title={'Phonebook'} />
+      <ContactForm addContact={addContact} />
+      <Section title={'Contacts'}>
+        <Filter value={filter} changeFilter={changeFilter} />
+        {visibleContacts.length !== 0 ? (
+          <ContactList
+            visibleContacts={visibleContacts}
+            deleteContact={deleteContact}
+          />
+        ) : (
+          <Notification message="You don't have contacts yet..." />
+        )}
+      </Section>
+    </Container>
+  );
+};
