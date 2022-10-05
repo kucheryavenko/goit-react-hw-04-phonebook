@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { ContactForm } from 'components/ContactForm';
 import { ContactList } from 'components/ContactList';
 import { Filter } from 'components/Filter';
@@ -23,7 +25,10 @@ export const App = () => {
 
   const addContact = contact => {
     if (checkDublicate(contact)) {
-      return alert(`${contact.name} is already in contacts.`);
+      toast.error(
+        `${contact.name} is already in contacts. Please add a new contact.`
+      );
+      return;
     }
     setContacts(prevContacts => {
       const newContacts = {
@@ -85,6 +90,7 @@ export const App = () => {
           <Notification message="You don't have contacts yet..." />
         )}
       </Section>
+      <ToastContainer autoClose={5000} />
     </Container>
   );
 };
